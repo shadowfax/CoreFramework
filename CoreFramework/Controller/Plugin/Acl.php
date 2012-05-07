@@ -29,18 +29,13 @@ class CoreFramework_Controller_Plugin_Acl extends Zend_Controller_Plugin_Abstrac
 	
 	public function preDispatch(Zend_Controller_Request_Abstract $request)
 	{
-		try {
 		$resource = $request->getModuleName() . ":" . $request->getControllerName();
 		$action = $request->getActionName();
 		
 		$acl = new CoreFramework_Acl();
 		
-		if (!Zend_Auth::getInstance()->hasIdentity()) {
-			$role = "anonymous";
-		} else {
-			$user = Zend_Registry::get('Core_User');
-			$role = $user->getRole();
-		}
+		
+		$role = CoreFramework_User::getInstance()->getRole();
 		
 		if (!$acl->has($resource)) {
 			// Administrators have full access (Even if we fogot to set a resource)
@@ -58,9 +53,6 @@ class CoreFramework_Controller_Plugin_Acl extends Zend_Controller_Plugin_Abstrac
 	    	$request->isDispatched(false);
 	    	return;
 		}	
-		} catch (Exception $ex) {
-			echo $ex->getMessage();exit(0);
-		}
 	}
 	
 }

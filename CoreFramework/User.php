@@ -14,26 +14,37 @@
  *
  */
 
-class CoreFramework_User extends Zend_Db_Table_Abstract
+class CoreFramework_User 
 {	
-	protected $_name = 'users';
+	/**
+	 * 
+	 */
+	protected $_adapter;
+	
+	/**
+	 * Unique user identifier.
+	 * @var int
+	 */
 	protected $_uid;
 	
 	/**
-	 * User roles
-	 * @var Array
+	 * User role
+	 * @var string
 	 */
-	protected $_roles;
+	protected $_role;
 	
 	/**
 	 * Singleton object.
 	 * @var CoreFramework_User
 	 */
-	private static $_instance;
+	private static $_instance = NULL;
 	
 	
 	protected function __construct()
 	{
+		// ToDo: Create an adapter, right now using default DB
+		$this->_adapter = Zend_Db_Table::getDefaultAdapter();
+		
 		// Set as anonymous by default
 		$this->_uid = -1;
 		
@@ -52,10 +63,15 @@ class CoreFramework_User extends Zend_Db_Table_Abstract
     */
 	public static function getInstance()
 	{
+		try {
 		if (is_null(self::$_instance)) {
 			self::$_instance = new self();
 		}
-		return self::$_instance;
+		return self::$_instance;	
+		} catch (Exception $e) {
+			echo $e->message();exit(0);
+		}
+		
 	}
 	
 	public function getIdentity()
@@ -64,30 +80,31 @@ class CoreFramework_User extends Zend_Db_Table_Abstract
 	}
 	
 	/**
-	 * Returns the user roles.
+	 * Returns the user role.
 	 */
-    public function getRoles()
+    public function getRole()
     {
-    	if (is_null($this->_roles)) {
+    	try {
+    	if (is_null($this->_role)) {
     		if ($this->_uid > 0) {
-    			$select = new Zend_Db_Select($this->getAdapter());
+    			$select = new Zend_Db_Select($this->_adapter);
     		
-    			$select->from('acl_groups', array('name'));
-    			$select->joinInner('acl_groups_users', 'acl_groups.id = acl_groups_users.group_id', NULL);
-    			$select->where('acl_groups_users.user_id=?', $this->_uid);
+    			$select->from('acl_roles', array('name'));
+    			$select->joinInner('users', 'acl_roles.id = users.role_id', NULL);
+    			$select->where('users.id=?', $this->_uid);
     			
-    			$this->_roles = array();
-    			foreach($rawRoles as $roles) {
-    				$this->_roles[] = $roles['name'];
-    			}
+    			$this->_role = $this->_adapter->fetchOne($select);
     			
-    			if(count($this->_roles) === 0) $this->_roles = array("anonymous");
-    			else $this->_roles[] = "UID:" . $this->_uid;
+    			if (empty($this->_role)) $this->_role = "anonymous";
     		} else {
-    			$this->_roles = array("anonymous");
+    			$this->_role = "anonymous";
     		}
+    	}	
+    	} catch (Exception $e) {
+    		echo $e->message();exit(0);
     	}
-    	return $this->_roles;
+    	
+    	return $this->_role;
     }
 	
 }
